@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rafi Fat'a Azhallah — Portfolio</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🖥️</text></svg>">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+
+<style>
+  :root {
+    --bg: #090C11;
+    --bg-raised: #0F141C;
+    --line: #1C2430;
+    --ink: #E7ECF3;
+    --ink-dim: #8993A4;
+    --ink-faint: #576073;
+    --violet: #8B7CF6;
+    --violet-dim: #8B7CF64d;
+    --mint: #4FD1AE;
+    --amber: #F0B23D;
+  }
+  html { scroll-behavior: smooth; scroll-padding-top: 90px; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .font-display { font-family: 'Space Grotesk', 'Inter', sans-serif; }
+  .font-mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  ::selection { background: var(--violet-dim); color: #fff; }
+
+  .grain {
+    position: fixed; inset: 0; pointer-events: none; z-index: 1; opacity: 0.035; mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .link-underline { position: relative; }
+  .link-underline::after {
+    content: ''; position: absolute; left: 0; right: 100%; bottom: -2px; height: 1px;
+    background: var(--violet); transition: right 0.25s ease;
+  }
+  .link-underline:hover::after { right: 0; }
+
+  .glow-border {
+    border: 1px solid var(--line);
+    transition: border-color 0.3s ease, transform 0.3s ease, background 0.3s ease;
+  }
+  .glow-border:hover {
+    border-color: #33405480;
+    transform: translateY(-2px);
+  }
+
+  .kbd {
+    border: 1px solid var(--line);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 1px 6px;
+    font-size: 12px;
+  }
+
+  .nav-blur {
+    background: rgba(9, 12, 17, 0.72);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .scroll-fade { opacity: 0; transform: translateY(14px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .scroll-fade.in-view { opacity: 1; transform: translateY(0); }
+
+  .focus-ring:focus-visible {
+    outline: 2px solid var(--violet);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  .track-caret {
+    display: inline-block; width: 0.55ch; background: var(--violet);
+    animation: caret 1s steps(1) infinite;
+  }
+  @keyframes caret { 50% { opacity: 0; } }
+
+  .marquee-track {
+    display: flex; width: max-content; animation: marquee 32s linear infinite;
+  }
+  @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  .timeline-line {
+    background: linear-gradient(180deg, transparent, var(--line) 8%, var(--line) 92%, transparent);
+  }
+
+  .pulse-dot { animation: pulse-dot 2.4s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%, 100% { box-shadow: 0 0 0 0 var(--violet-dim); } 50% { box-shadow: 0 0 0 6px transparent; } }
+
+  textarea, input { background: var(--bg-raised); }
+  textarea:focus, input:focus { outline: none; border-color: var(--violet) !important; }
+
+  code.inline { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--bg-raised); border: 1px solid var(--line); padding: 0.1em 0.4em; border-radius: 4px; color: var(--mint); }
+</style>
+</head>
+<body class="antialiased">
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback } = React;
+
+/* ---------------- Scroll reveal hook ---------------- */
+function useReveal() {
+  useEffect(() => {
+    const els = document.querySelectorAll('.scroll-fade');
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in-view');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.15 });
+    els.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, []);
+}
+
+/* ---------------- Neural network hero canvas ---------------- */
+function NeuralCanvas() {
+  const canvasRef = useRef(null);
+  const mouseRef = useRef({ x: -9999, y: -9999 });
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let width, height, dpr;
+    let nodes = [];
+    let raf;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.parentElement.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = width + 'px';
+      canvas.style.height = height + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      const count = Math.max(18, Math.floor((width * height) / 26000));
+      nodes = Array.from({ length: count }, () => ({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        vx: (Math.random() - 0.5) * 0.25,
+        vy: (Math.random() - 0.5) * 0.25,
+        r: Math.random() * 1.6 + 1,
+      }));
+    }
+
+    function step() {
+      ctx.clearRect(0, 0, width, height);
+      const mx = mouseRef.current.x, my = mouseRef.current.y;
+
+      for (const n of nodes) {
+        if (!reduceMotion) {
+          n.x += n.vx;
+          n.y += n.vy;
+          if (n.x < 0 || n.x > width) n.vx *= -1;
+          if (n.y < 0 || n.y > height) n.vy *= -1;
+        }
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const a = nodes[i], b = nodes[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          const maxDist = 130;
+          if (dist < maxDist) {
+            const opacity = (1 - dist / maxDist) * 0.22;
+            ctx.strokeStyle = `rgba(139,124,246,${opacity})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.stroke();
+          }
+        }
+      }
+
+      for (const n of nodes) {
+        const dx = n.x - mx, dy = n.y - my;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        const near = dist < 160;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, near ? n.r + 1 : n.r, 0, Math.PI * 2);
+        ctx.fillStyle = near ? 'rgba(79,209,174,0.9)' : 'rgba(231,236,243,0.55)';
+        ctx.fill();
+
+        if (near) {
+          ctx.strokeStyle = `rgba(79,209,174,${(1 - dist / 160) * 0.35})`;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(n.x, n.y);
+          ctx.lineTo(mx, my);
+          ctx.stroke();
+        }
+      }
+
+      raf = requestAnimationFrame(step);
+    }
+
+    resize();
+    step();
+    window.addEventListener('resize', resize);
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', resize); };
+  }, []);
+
+  const handleMove = useCallback((e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }, []);
+  const handleLeave = useCallback(() => { mouseRef.current = { x: -9999, y: -9999 }; }, []);
+  const handleTouch = useCallback((e) => {
+    if (!e.touches[0]) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    mouseRef.current = { x: e.touches[0].clientX - rect.left, y: e.touches[0].clientY - rect.top };
+  }, []);
+
+  return (
+    <div
+      className="absolute inset-0"
+      onMouseMove={handleMove}
+      onMouseLeave={handleLeave}
+      onTouchMove={handleTouch}
+      onTouchEnd={handleLeave}
+    >
+      <canvas ref={canvasRef} className="w-full h-full" />
+    </div>
+  );
+}
+
+/* ---------------- Nav ---------------- */
+const NAV_LINKS = [
+  { id: 'about', label: 'About' },
+  { id: 'skills', label: 'Skills' },
+  { id: 'projects', label: 'Projects' },
+  { id: 'journey', label: 'Journey' },
+  { id: 'contact', label: 'Contact' },
+];
+
+function Nav() {
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  return (
+    <header className={`fixed top-0 left-0 right-0 z-50 nav-blur transition-shadow ${scrolled ? 'shadow-[0_1px_0_0_var(--line)]' : ''}`}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+        <a href="#top" className="font-display font-semibold tracking-tight text-[15px] flex items-center gap-2 focus-ring">
+          <span className="w-2 h-2 rounded-full pulse-dot" style={{ background: 'var(--violet)' }}></span>
+          rafi<span style={{ color: 'var(--ink-faint)' }}>.dev</span>
+        </a>
+        <nav className="hidden md:flex items-center gap-8">
+          {NAV_LINKS.map((l) => (
+            <a key={l.id} href={`#${l.id}`} className="link-underline text-sm focus-ring" style={{ color: 'var(--ink-dim)' }}>
+              {l.label}
+            </a>
+          ))}
+          <a
+            href="#contact"
+            className="text-sm px-4 py-2 rounded-full font-medium focus-ring transition-colors"
+            style={{ background: 'var(--violet)', color: '#0A0C12' }}
+          >
+            Say hi
+          </a>
+        </nav>
+        <button
+          aria-label="Toggle menu"
+          className="md:hidden w-9 h-9 flex flex-col items-center justify-center gap-[5px] focus-ring"
+          onClick={() => setOpen((o) => !o)}
+        >
+          <span className="block w-5 h-px transition-transform" style={{ background: 'var(--ink)', transform: open ? 'translateY(6px) rotate(45deg)' : 'none' }}></span>
+          <span className="block w-5 h-px transition-opacity" style={{ background: 'var(--ink)', opacity: open ? 0 : 1 }}></span>
+          <span className="block w-5 h-px transition-transform" style={{ background: 'var(--ink)', transform: open ? 'translateY(-6px) rotate(-45deg)' : 'none' }}></span>
+        </button>
+      </div>
+      {open && (
+        <div className="md:hidden px-5 pb-5 flex flex-col gap-1 border-t" style={{ borderColor: 'var(--line)' }}>
+          {NAV_LINKS.map((l) => (
+            <a
+              key={l.id}
+              href={`#${l.id}`}
+              onClick={() => setOpen(false)}
+              className="py-3 text-[15px] focus-ring"
+              style={{ color: 'var(--ink-dim)' }}
+            >
+              {l.label}
+            </a>
+          ))}
+          <a
+            href="#contact"
+            onClick={() => setOpen(false)}
+            className="mt-2 text-center text-sm px-4 py-2.5 rounded-full font-medium"
+            style={{ background: 'var(--violet)', color: '#0A0C12' }}
+          >
+            Say hi
+          </a>
+        </div>
+      )}
+    </header>
+  );
+}
+
+/* ---------------- Hero ---------------- */
+function Hero() {
+  const roles = ['learning AI & ML', 'building small tools', 'writing my first algorithms', 'exploring software dev'];
+  const [roleIdx, setRoleIdx] = useState(0);
+  const [display, setDisplay] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    const full = roles[roleIdx];
+    const speed = deleting ? 35 : 55;
+    const timer = setTimeout(() => {
+      if (!deleting) {
+        const next = full.slice(0, display.length + 1);
+        setDisplay(next);
+        if (next === full) setTimeout(() => setDeleting(true), 1400);
+      } else {
+        const next = full.slice(0, display.length - 1);
+        setDisplay(next);
+        if (next === '') {
+          setDeleting(false);
+          setRoleIdx((i) => (i + 1) % roles.length);
+        }
+      }
+    }, speed);
+    return () => clearTimeout(timer);
+  }, [display, deleting, roleIdx]);
+
+  return (
+    <section id="top" className="relative pt-32 pb-24 sm:pt-40 sm:pb-32 overflow-hidden">
+      <div className="absolute inset-0 h-[560px]">
+        <NeuralCanvas />
+        <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 0%, var(--bg) 92%)' }}></div>
+      </div>
+
+      <div className="relative max-w-6xl mx-auto px-5 sm:px-8">
+        <div className="max-w-2xl">
+          <p className="font-mono text-sm mb-5" style={{ color: 'var(--mint)' }}>
+            Purwokerto, Indonesia — Informatics '26
+          </p>
+          <h1 className="font-display font-semibold leading-[1.05] text-[clamp(2.2rem,6vw,3.75rem)] tracking-tight">
+            Rafi Fat&rsquo;a Azhallah
+          </h1>
+          <p className="mt-5 text-lg sm:text-xl" style={{ color: 'var(--ink-dim)' }}>
+            Informatics freshman, currently <span style={{ color: 'var(--ink)' }}>{display}</span>
+            <span className="track-caret">&nbsp;</span>
+          </p>
+          <p className="mt-6 text-base leading-relaxed max-w-xl" style={{ color: 'var(--ink-dim)' }}>
+            First-year student at Telkom University Purwokerto with a growing interest in artificial intelligence,
+            machine learning, and software development. I don&rsquo;t have years of experience &mdash; I have a
+            notebook full of things I&rsquo;m trying to understand, and I&rsquo;m documenting the process here.
+          </p>
+
+          <div className="mt-10 flex flex-wrap items-center gap-4">
+            <a
+              href="#projects"
+              className="group inline-flex items-center gap-2 text-sm font-medium px-5 py-3 rounded-full focus-ring transition-transform hover:-translate-y-0.5"
+              style={{ background: 'var(--violet)', color: '#0A0C12' }}
+            >
+              See what I&rsquo;m building
+              <span className="transition-transform group-hover:translate-x-0.5">&rarr;</span>
+            </a>
+            <a
+              href="#contact"
+              className="inline-flex items-center gap-2 text-sm font-medium px-5 py-3 rounded-full glow-border focus-ring"
+              style={{ color: 'var(--ink)' }}
+            >
+              Get in touch
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- About ---------------- */
+function About() {
+  return (
+    <section id="about" className="py-24 sm:py-28 border-t" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 grid md:grid-cols-[0.9fr,1.1fr] gap-12 md:gap-16">
+        <div className="scroll-fade">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">About me</h2>
+          <p className="mt-4 text-sm" style={{ color: 'var(--ink-faint)' }}>
+            The short version, honestly told.
+          </p>
+        </div>
+        <div className="scroll-fade space-y-5 text-[15px] leading-relaxed" style={{ color: 'var(--ink-dim)' }}>
+          <p>
+            I&rsquo;m a first-year Informatics student at <span style={{ color: 'var(--ink)' }}>Telkom University Purwokerto</span>,
+            which means most of what&rsquo;s on this page is closer to &ldquo;in progress&rdquo; than &ldquo;finished.&rdquo;
+            I&rsquo;m okay with that &mdash; I&rsquo;d rather be upfront about where I am than dress it up.
+          </p>
+          <p>
+            What pulled me toward computer science was curiosity about how intelligent systems actually work under the hood:
+            how a model learns from data, how software gets built well, and where those two things meet. So right now I&rsquo;m
+            splitting my time between core programming fundamentals and early experiments with AI and machine learning.
+          </p>
+          <p>
+            I learn best by building small, slightly-too-ambitious things and figuring out why they break. This site is
+            one of them &mdash; and everything below will keep changing as I do.
+          </p>
+          <div className="pt-2 flex flex-wrap gap-3">
+            {['Informatics @ Telkom University Purwokerto', 'Class of 2030', 'Based in Purwokerto, ID'].map((t) => (
+              <span key={t} className="font-mono text-xs px-3 py-1.5 rounded-full glow-border" style={{ color: 'var(--ink-dim)' }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Skills ---------------- */
+const SKILL_GROUPS = [
+  {
+    label: 'Foundations',
+    color: 'var(--violet)',
+    items: [
+      { name: 'Python', level: 'Learning' },
+      { name: 'Golang', level: 'Learning' },
+      { name: 'Java', level: 'Learning' },
+      { name: 'Git & GitHub', level: 'Learning' },
+    ],
+  },
+  {
+    label: 'Web',
+    color: 'var(--mint)',
+    items: [
+      { name: 'HTML / CSS', level: 'Learning' },
+      { name: 'JavaScript', level: 'Learning' },
+      { name: 'React', level: 'Just started' },
+      { name: 'Tailwind CSS', level: 'Learning' },
+    ],
+  },
+  {
+    label: 'AI / ML — early days',
+    color: 'var(--amber)',
+    items: [
+      { name: 'NumPy / Pandas', level: 'Learning' },
+      { name: 'scikit-learn basics', level: 'Just started' },
+      { name: 'Linear algebra & stats', level: 'Coursework' },
+      { name: 'Neural nets (theory)', level: 'Reading up on it' },
+    ],
+  },
+];
+
+function Skills() {
+  return (
+    <section id="skills" className="py-24 sm:py-28 border-t" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8">
+        <div className="scroll-fade max-w-xl">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">What I&rsquo;m working with</h2>
+          <p className="mt-4 text-[15px]" style={{ color: 'var(--ink-dim)' }}>
+            An honest snapshot, not a checklist of buzzwords. Labels reflect where I actually am, not where I want to be.
+          </p>
+        </div>
+
+        <div className="mt-14 grid md:grid-cols-3 gap-px" style={{ background: 'var(--line)' }}>
+          {SKILL_GROUPS.map((group, gi) => (
+            <div key={group.label} className="scroll-fade p-7 sm:p-8" style={{ background: 'var(--bg)', transitionDelay: `${gi * 90}ms` }}>
+              <div className="flex items-center gap-2 mb-6">
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: group.color }}></span>
+                <h3 className="font-mono text-xs uppercase tracking-wider" style={{ color: 'var(--ink-faint)' }}>{group.label}</h3>
+              </div>
+              <ul className="space-y-4">
+                {group.items.map((item) => (
+                  <li key={item.name} className="flex items-baseline justify-between gap-4">
+                    <span className="text-[15px]" style={{ color: 'var(--ink)' }}>{item.name}</span>
+                    <span className="font-mono text-xs whitespace-nowrap" style={{ color: 'var(--ink-faint)' }}>{item.level}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Projects ---------------- */
+const PROJECTS = [
+  {
+    title: 'Slot Machine',
+    period: '2026',
+    stack: ['Python'],
+    blurb:
+      'A simple Slot Machine Built using Python. Nothing fancy \u2014 my first project where i learned Loop in Python, project where i learned why looping can get annoying so fast.',
+    status: 'Complete',
+    link: 'https://github.com/FataBelajarCoding/First-Project-on-Python.git',
+  },
+  {
+    title: 'Block Volume Calculator',
+    period: '2026',
+    stack: ['Golang'],
+    blurb:
+      'My first project on Golang where i learned how to use Variable, Operators, and Functions.',
+    status: 'Complete',
+    link: 'https://github.com/FataBelajarCoding/Menghitung-Volume-Balok.git',
+  },
+  {
+    title: 'This Portfolio',
+    period: '2026',
+    stack: ['React', 'Tailwind CSS'],
+    blurb: 'The site you\u2019re looking at \u2014 built to learn component-based UI and to have somewhere to point people as the rest of this list grows.',
+    status: 'Live',
+    link: '#',
+  },
+];
+
+function ProjectCard({ p, i }) {
+  return (
+    <article
+      className="scroll-fade glow-border rounded-2xl p-6 sm:p-7 flex flex-col h-full"
+      style={{ background: 'var(--bg-raised)', transitionDelay: `${i * 80}ms` }}
+    >
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <h3 className="font-display text-lg font-semibold tracking-tight">{p.title}</h3>
+        {p.tag && (
+          <span className="font-mono text-[10px] uppercase tracking-wider px-2 py-1 rounded-full shrink-0" style={{ background: 'var(--violet-dim)', color: 'var(--violet)' }}>
+            {p.tag}
+          </span>
+        )}
+      </div>
+      <p className="text-sm leading-relaxed flex-1" style={{ color: 'var(--ink-dim)' }}>{p.blurb}</p>
+      <div className="mt-5 flex flex-wrap gap-2">
+        {p.stack.map((s) => (
+          <span key={s} className="font-mono text-[11px] px-2 py-1 rounded" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--line)', color: 'var(--ink-faint)' }}>
+            {s}
+          </span>
+        ))}
+      </div>
+      <div className="mt-5 pt-5 border-t flex items-center justify-between" style={{ borderColor: 'var(--line)' }}>
+        <span className="text-xs" style={{ color: 'var(--ink-faint)' }}>{p.status} &middot; {p.period}</span>
+        <a href={p.link} className="link-underline text-xs font-medium focus-ring" style={{ color: 'var(--mint)' }}>
+          View code &rarr;
+        </a>
+      </div>
+    </article>
+  );
+}
+
+function Projects() {
+  return (
+    <section id="projects" className="py-24 sm:py-28 border-t" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8">
+        <div className="scroll-fade max-w-xl flex items-end justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Things I&rsquo;ve built (so far)</h2>
+            <p className="mt-4 text-[15px]" style={{ color: 'var(--ink-dim)' }}>
+              Small, real, and mostly written to answer a question I had. Placeholder links for now &mdash; swap these for your repos.
+            </p>
+          </div>
+        </div>
+        <div className="mt-12 grid sm:grid-cols-2 gap-5">
+          {PROJECTS.map((p, i) => <ProjectCard key={p.title} p={p} i={i} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Learning Journey ---------------- */
+const JOURNEY = [
+  {
+    when: '2023',
+    title: 'Started exploring code',
+    detail: 'First time being introduced to Coding when i first started senior high. Getting to know html, css, python, and how computer work',
+  },
+  {
+    when: 'Aug 2026',
+    title: 'Began Informatics at Telkom University Purwokerto',
+    detail: 'Started my freshman year, diving into programming fundamentals, discrete math, and the basics of how computers actually work.',
+  },
+  {
+    when: 'Now',
+    title: 'Learning how coding can help people & taking the first steps into ML',
+    detail: 'Building small React projects like this one, and working through the fundamentals of machine learning \u2014 datasets, models, and a lot of new vocabulary.',
+    current: true,
+  },
+  {
+    when: 'Next',
+    title: 'Deeper into AI/ML and a real project',
+    detail: 'Aiming to complete a proper end-to-end ML project and contribute to a small open-source repo for the first time.',
+    upcoming: true,
+  },
+];
+
+function Journey() {
+  return (
+    <section id="journey" className="py-24 sm:py-28 border-t" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8">
+        <div className="scroll-fade max-w-xl">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Learning journey</h2>
+          <p className="mt-4 text-[15px]" style={{ color: 'var(--ink-dim)' }}>
+            A running timeline, not a highlight reel.
+          </p>
+        </div>
+
+        <div className="mt-14 relative max-w-2xl">
+          <div className="absolute left-[7px] top-2 bottom-2 w-px timeline-line"></div>
+          <div className="space-y-10">
+            {JOURNEY.map((step, i) => (
+              <div key={step.when} className="scroll-fade relative pl-9" style={{ transitionDelay: `${i * 90}ms` }}>
+                <span
+                  className={`absolute left-0 top-1.5 w-[15px] h-[15px] rounded-full border-2 ${step.current ? 'pulse-dot' : ''}`}
+                  style={{
+                    borderColor: step.current ? 'var(--violet)' : 'var(--line)',
+                    background: step.current ? 'var(--violet)' : step.upcoming ? 'transparent' : 'var(--bg-raised)',
+                  }}
+                ></span>
+                <p className="font-mono text-xs mb-1.5" style={{ color: step.current ? 'var(--violet)' : 'var(--ink-faint)' }}>{step.when}</p>
+                <h3 className="font-display text-base font-semibold" style={{ color: step.upcoming ? 'var(--ink-dim)' : 'var(--ink)' }}>{step.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed max-w-lg" style={{ color: 'var(--ink-faint)' }}>{step.detail}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Contact ---------------- */
+function Contact() {
+return (
+    <section id="contact" className="py-24 sm:py-28 border-t" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 grid md:grid-cols-[0.9fr,1.1fr] gap-12 md:gap-16">
+        <div className="scroll-fade">
+          <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">Let&rsquo;s talk</h2>
+          <p className="mt-4 text-[15px] max-w-sm" style={{ color: 'var(--ink-dim)' }}>
+            Open to study collabs, small project ideas, or just talking about AI and software. I reply slower than a
+            senior dev, but I do reply.
+          </p>
+          <div className="mt-8 flex flex-col gap-3">
+            <a href="https://github.com/FataBelajarCoding" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 focus-ring">
+              <span className="w-9 h-9 rounded-full flex items-center justify-center glow-border shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.73.5.5 5.73.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.7-3.88-1.54-3.88-1.54-.53-1.34-1.29-1.7-1.29-1.7-1.05-.72.08-.71.08-.71 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.23-1.28-5.23-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.68 5.41-5.24 5.69.42.36.78 1.08.78 2.18 0 1.58-.01 2.85-.01 3.24 0 .32.2.67.8.56C20.71 21.39 24 17.07 24 12c0-6.27-5.23-11.5-12-11.5Z"/></svg>
+              </span>
+              <span className="text-sm link-underline" style={{ color: 'var(--ink)' }}>github.com/FataBelajarCoding</span>
+            </a>
+            <a href="https://linkedin.com/in/rafi-fata-azhallah-338991428" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-3 focus-ring">
+              <span className="w-9 h-9 rounded-full flex items-center justify-center glow-border shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.95v5.66H9.34V9h3.42v1.56h.05c.48-.9 1.64-1.85 3.38-1.85 3.62 0 4.29 2.38 4.29 5.48v6.26ZM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13ZM7.12 20.45H3.56V9h3.56v11.45ZM22.22 0H1.77C.8 0 0 .78 0 1.75v20.5C0 23.22.8 24 1.77 24h20.45c.98 0 1.78-.78 1.78-1.75V1.75C24 .78 23.2 0 22.22 0Z"/></svg>
+              </span>
+              <span className="text-sm link-underline" style={{ color: 'var(--ink)' }}>linkedin.com/in/rafi-fata-azhallah-338991428</span>
+            </a>
+            <a href="mailto: rafifataazhallah@gmail.com" className="group flex items-center gap-3 focus-ring">
+              <span className="w-9 h-9 rounded-full flex items-center justify-center glow-border shrink-0">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 7 10 6 10-6"/></svg>
+              </span>
+              <span className="text-sm link-underline" style={{ color: 'var(--ink)' }}>rafifataazhallah@gmail.com</span>
+            </a>
+          </div>
+          <p className="mt-8 font-mono text-xs" style={{ color: 'var(--ink-faint)' }}>
+          </p>
+        </div>
+          <div className="scroll-fade"></div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------------- Footer ---------------- */
+function Footer() {
+  return (
+    <footer className="border-t py-10" style={{ borderColor: 'var(--line)' }}>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p className="font-mono text-xs" style={{ color: 'var(--ink-faint)' }}>
+          &copy; 2026 Rafi Fat&rsquo;a Azhallah. Built with React &amp; Tailwind, still learning both.
+        </p>
+        <div className="flex items-center gap-5">
+          <a href="https://github.com/FataBelajarCoding" target="_blank" rel="noopener noreferrer" className="text-xs link-underline focus-ring" style={{ color: 'var(--ink-faint)' }}>GitHub</a>
+          <a href="https://linkedin.com/in/rafi-fata-azhallah-338991428" target="_blank" rel="noopener noreferrer" className="text-xs link-underline focus-ring" style={{ color: 'var(--ink-faint)' }}>LinkedIn</a>
+          <a href="#top" className="text-xs link-underline focus-ring" style={{ color: 'var(--ink-faint)' }}>Back to top</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ---------------- App ---------------- */
+function App() {
+  useReveal();
+  return (
+    <>
+      <div className="grain"></div>
+      <Nav />
+      <main>
+        <Hero />
+        <About />
+        <Skills />
+        <Projects />
+        <Journey />
+        <Contact />
+      </main>
+      <Footer />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
